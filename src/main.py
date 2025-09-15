@@ -50,7 +50,7 @@ while True:
     sensor1 = sensor1_raw > 55000
     sensor2 = sensor2_raw > 55000
     
-    current_time = time.time() * 1000  # Current time in milliseconds
+    current_time = time.ticks_ms()  # Current time in milliseconds
     sensor_state = (sensor1, sensor2)
     
     # Check if sensor state changed
