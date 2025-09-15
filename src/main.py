@@ -1,80 +1,97 @@
 from machine import Pin, ADC
 import time
-from store import get_note_store
 
 # Initialize ADC on GPIO28 (which is ADC channel 2)
 photoresistor1 = ADC(Pin(28))
 photoresistor2 = ADC(Pin(27))
-sensor1 = False
-sensor2 = False
 buzzer_pin = machine.PWM(machine.Pin(18))
-freq = 440
 
-# Initialize the note store
-note_store = get_note_store()
-
+# Note mapping based on truth table: 00=silence, 01=C, 10=D, 11=E
 note_mapping = {
     (False, False): (0, "silence"),
-    (True, False): (400, "C"),
-    (False, True): (500, "D"),
-    (True, True): (600, "E"),
+    (False, True): (262, "C"),   # 01 = C
+    (True, False): (294, "D"),   # 10 = D  
+    (True, True): (330, "E"),    # 11 = E
 }
 
-# Read the raw ADC value (0-65535 for 16-bit resolution)
+# Simple queue to store notes with durations
+note_queue = []
+current_note = None
+current_note_start_time = 0
+last_input_time = 0
+silence_timeout = 5000  # 5 seconds in milliseconds
+
+def add_note_to_queue(freq, duration_ms):
+    """Add a note with duration to the queue"""
+    if freq > 0:  # Only add non-silence notes
+        note_queue.append((freq, duration_ms))
+        print(f"Added note: {freq}Hz for {duration_ms}ms")
+
+def play_queued_notes():
+    """Play all notes in the queue"""
+    print(f"Playing {len(note_queue)} notes from queue...")
+    while note_queue:
+        freq, duration_ms = note_queue.pop(0)
+        print(f"Playing: {freq}Hz for {duration_ms}ms")
+        
+        buzzer_pin.freq(int(freq))
+        buzzer_pin.duty_u16(32768)  # 50% duty cycle
+        time.sleep(duration_ms / 1000)  # Convert ms to seconds
+        buzzer_pin.duty_u16(0)  # Stop buzzer
+        time.sleep(0.1)  # Small gap between notes
+
+# Main loop
 while True:
     # Read sensor values
     sensor1_raw = photoresistor1.read_u16()
     sensor2_raw = photoresistor2.read_u16()
-    print(f"Sensor1: {sensor1_raw}, Sensor2: {sensor2_raw}")
     
-    # Convert to boolean values
-    sensor1_lit = sensor1_raw > 55000
-    sensor2_lit = sensor2_raw > 55000
+    # Convert to boolean (True if light detected)
+    sensor1 = sensor1_raw > 55000
+    sensor2 = sensor2_raw > 55000
     
-    # Add sensor input to note store
-    current_note = note_store.add_sensor_input(sensor1_lit, sensor2_lit)
+    current_time = time.time() * 1000  # Current time in milliseconds
+    sensor_state = (sensor1, sensor2)
     
-    # Check for timeout and handle playback
-    timeout_note = note_store.check_timeout()
-    
-    # Determine which note to play
-    note_to_play = current_note or timeout_note
-    
-    if note_to_play:
-        freq = note_to_play["frequency"]
-        note_name = note_to_play["note_name"]
-        print(f"Playing: {note_name} ({freq}Hz)")
+    # Check if sensor state changed
+    if current_note != sensor_state:
+        # If we had a previous note, calculate its duration and add to queue
+        if current_note is not None:
+            duration = current_time - current_note_start_time
+            if duration > 50:  # Only add notes longer than 50ms
+                freq, note_name = note_mapping[current_note]
+                add_note_to_queue(freq, duration)
         
-        if freq > 0:    
+        # Start tracking new note
+        current_note = sensor_state
+        current_note_start_time = current_time
+        last_input_time = current_time
+        
+        # Play current note immediately
+        freq, note_name = note_mapping[sensor_state]
+        if freq > 0:
             buzzer_pin.freq(int(freq))
-            buzzer_pin.duty_u16(32768) # 50% duty cycle
+            buzzer_pin.duty_u16(32768)
+            print(f"Playing: {note_name} ({freq}Hz)")
         else:
             buzzer_pin.duty_u16(0)
+            print("Silence")
     
-    # Check if we should start playback of stored notes
-    if note_store.get_queue_status()["queue_size"] > 0 and not (sensor1_lit or sensor2_lit):
-        # Check if enough time has passed since last input to start playback
-        status = note_store.get_queue_status()
-        time_since_input = status["current_time"] - status["last_input_time"]
+    # Update last input time if any sensor is active
+    if sensor1 or sensor2:
+        last_input_time = current_time
+    
+    # Check for silence timeout (5 seconds of no input)
+    time_since_input = current_time - last_input_time
+    if time_since_input >= silence_timeout and note_queue:
+        # Stop current note
+        buzzer_pin.duty_u16(0)
+        current_note = None
         
-        if time_since_input > 2000:  # 2 seconds of no input
-            print("Starting playback of stored notes...")
-            while note_store.get_queue_status()["queue_size"] > 0:
-                stored_note = note_store.pop_note()
-                if stored_note:
-                    freq = stored_note["frequency"]
-                    duration = stored_note["duration_ms"] / 1000.0  # Convert to seconds
-                    note_name = stored_note["note_name"]
-                    print(f"Playing stored note: {note_name} ({freq}Hz) for {duration:.2f}s")
-                    
-                    if freq > 0:
-                        buzzer_pin.freq(int(freq))
-                        buzzer_pin.duty_u16(32768)
-                        time.sleep(duration)
-                    else:
-                        buzzer_pin.duty_u16(0)
-                        time.sleep(duration)
-            
-            print("Playback complete!")
+        # Play all queued notes
+        play_queued_notes()
+        
+        # Reset timing
+        last_input_time = current_time
     
-    time.sleep(0.25)
+    time.sleep(0.05)  # Small delay for responsiveness
