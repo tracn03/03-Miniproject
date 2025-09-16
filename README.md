@@ -24,7 +24,8 @@ Other IDE can be used, including Visual Studio Code or
 * Freenove Pico breakout board [FNK0081](https://store.freenove.com/products/fnk0081)
 * Piezo Buzzer SameSky CPT-3095C-300
 * 10k ohm resistor
-* 2 [tactile switches](hhttps://www.mouser.com/ProductDetail/E-Switch/TL59NF160Q?qs=QtyuwXswaQgJqDRR55vEFA%3D%3D)
+* 2 photoresistors
+* Custom MDF laser-cut housing
 
 ### Photoresistor details
 
@@ -39,6 +40,9 @@ The MicroPython
 class is used to read the analog voltage from the photoresistor.
 The `machine.ADC(id)` value corresponds to the "GP" pin number.
 On the Pico W, GP28 is ADC2, accessed with `machine.ADC(28)`.
+
+![This image shows how our photoresistors receive light and translate it to notes.](/Users/michaeldaniels/Downloads/sd1.png)
+
 
 ### Piezo buzzer details
 
@@ -60,6 +64,10 @@ Over human history, the corresspondance of notes to frequencies has changed over
 For the question below, feel free to use musical scale of your choice!
 
 [Music Examples](https://github.com/twisst/Music-for-Raspberry-Pi-Pico/blob/main/play.py)
+
+## Housing Details
+
+Our laser-cut MDF housing makes the project more reliable and user-friendly by securely holding the Raspberry Pi Pico, breakout board, photoresistors, and buzzer in place. The enclosure reduces loose wiring issues, shields the sensors from stray light for more consistent readings, and provides a stable structure that can be easily transported or demonstrated. It also gives the project a professional, finished look that highlights both the electrical functionality and the mechanical design skills involved.
 
 
 ## Notes
