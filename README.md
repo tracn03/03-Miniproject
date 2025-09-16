@@ -41,7 +41,7 @@ class is used to read the analog voltage from the photoresistor.
 The `machine.ADC(id)` value corresponds to the "GP" pin number.
 On the Pico W, GP28 is ADC2, accessed with `machine.ADC(28)`.
 
-![This image shows how our photoresistors receive light and translate it to notes.](/Users/michaeldaniels/Downloads/sd1.png)
+![This image shows how our photoresistors receive light and translate it to notes.](sd1.png)
 
 
 ### Piezo buzzer details
