@@ -5,6 +5,7 @@ import urequests as requests
 import ujson as json 
 
 # WiFi setup function from internet
+# add wifi.config file with usrname and password to properly connect to internet 
 def connect_wifi():
     """Connect to WiFi using config file"""
     try:
