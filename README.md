@@ -1,5 +1,12 @@
 # 2025 Fall ECE Senior Design Miniproject
 
+## Project Demo
+
+
+https://github.com/user-attachments/assets/2c99abc6-befa-4c3d-bc24-fa23f2672631
+
+
+
 [Project definition](./Project.md)
 
 This project uses the Raspberry Pi Pico 2WH SC1634 (wireless, with header pins).
